@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MeatWala – Delivery Orders</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700&family=Noto+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --saffron: #E8751A;
+    --saffron-light: #FDF0E6;
+    --saffron-dark: #B85A10;
+    --cream: #FFF8F0;
+    --green: #2E7D32;
+    --green-light: #E8F5E9;
+    --red: #C62828;
+    --red-light: #FFEBEE;
+    --ink: #1A1208;
+    --ink2: #5A4A3A;
+    --ink3: #9A8A7A;
+    --border: #E8D8C8;
+    --white: #FFFFFF;
+    --card: #FFFCF8;
+    --shadow: 0 2px 12px rgba(232,117,26,0.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans', sans-serif; background: var(--cream); color: var(--ink); min-height: 100vh; }
+
+  .topbar {
+    background: var(--saffron); color: white; padding: 0 20px; height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(184,90,16,0.3);
+  }
+  .topbar-brand { font-family: 'Baloo 2', cursive; font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .topbar-brand span { font-size: 22px; }
+  .topbar-stats { display: flex; gap: 16px; font-size: 12px; font-weight: 500; opacity: 0.95; }
+  .topbar-stats .stat { text-align: center; }
+  .topbar-stats .sval { font-size: 16px; font-weight: 700; display: block; }
+
+  .nav-tabs { background: white; display: flex; border-bottom: 2px solid var(--border); padding: 0 16px; gap: 4px; overflow-x: auto; }
+  .nav-tab {
+    padding: 12px 18px; font-size: 13px; font-weight: 500; color: var(--ink3); cursor: pointer;
+    border-bottom: 3px solid transparent; margin-bottom: -2px; white-space: nowrap; transition: all 0.2s;
+    font-family: 'Noto Sans', sans-serif; background: none; border-top: none; border-left: none; border-right: none;
+  }
+  .nav-tab:hover { color: var(--saffron); }
+  .nav-tab.active { color: var(--saffron); border-bottom-color: var(--saffron); font-weight: 600; }
+
+  .page { display: none; padding: 20px 16px; max-width: 800px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  .sec-head {
+    font-family: 'Baloo 2', cursive; font-size: 17px; font-weight: 600; color: var(--ink);
+    margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+  }
+  .sec-head svg { color: var(--saffron); }
+
+  .form-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow); }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 12px; font-weight: 600; color: var(--ink2); text-transform: uppercase; letter-spacing: 0.05em; }
+  input, select, textarea {
+    border: 1.5px solid var(--border); border-radius: 8px; padding: 9px 12px; font-size: 14px;
+    font-family: 'Noto Sans', sans-serif; color: var(--ink); background: white; transition: border-color 0.2s; outline: none;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--saffron); }
+  textarea { resize: vertical; min-height: 70px; }
+
+  .btn { padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; font-family: 'Noto Sans', sans-serif; transition: all 0.18s; }
+  .btn-primary { background: var(--saffron); color: white; }
+  .btn-primary:hover { background: var(--saffron-dark); transform: translateY(-1px); }
+  .btn-primary:active { transform: scale(0.97); }
+  .btn-outline { background: white; color: var(--saffron); border: 1.5px solid var(--saffron); }
+  .btn-outline:hover { background: var(--saffron-light); }
+  .btn-danger { background: var(--red-light); color: var(--red); border: 1.5px solid #FFCDD2; }
+  .btn-danger:hover { background: #FFCDD2; }
+  .btn-sm { padding: 5px 12px; font-size: 12px; border-radius: 6px; }
+  .btn-green { background: var(--green); color: white; border: none; }
+  .btn-green:hover { background: #1B5E20; }
+
+  .order-list { display: flex; flex-direction: column; gap: 12px; }
+  .order-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px;
+    box-shadow: var(--shadow); animation: fadeUp 0.3s ease; border-left: 4px solid var(--saffron);
+  }
+  .order-card.delivered { border-left-color: var(--green); opacity: 0.85; }
+  .order-card.cancelled { border-left-color: var(--red); opacity: 0.7; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .order-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 8px; }
+  .order-name { font-family: 'Baloo 2', cursive; font-size: 16px; font-weight: 600; color: var(--ink); }
+  .order-id { font-size: 11px; color: var(--ink3); }
+  .badge { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+  .badge-pending { background: #FFF3E0; color: #E65100; }
+  .badge-delivered { background: var(--green-light); color: var(--green); }
+  .badge-cancelled { background: var(--red-light); color: var(--red); }
+  .order-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; font-size: 13px; color: var(--ink2); margin-bottom: 10px; }
+  .order-meta span { display: flex; align-items: center; gap: 5px; }
+  .order-meta .icon { font-size: 14px; }
+  .order-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .filter-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .filter-row input { flex: 1; min-width: 150px; }
+  .filter-row select { min-width: 120px; }
+
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px; }
+  .sum-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; text-align: center; box-shadow: var(--shadow); }
+  .sum-card .snum { font-family: 'Baloo 2', cursive; font-size: 26px; font-weight: 700; color: var(--saffron); display: block; }
+  .sum-card .slbl { font-size: 12px; color: var(--ink3); margin-top: 2px; }
+
+  .empty { text-align: center; padding: 40px 20px; color: var(--ink3); }
+  .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty p { font-size: 14px; }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(26,18,8,0.55); z-index: 200; align-items: center; justify-content: center; padding: 16px; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: white; border-radius: 16px; padding: 24px; max-width: 420px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.25); }
+  .receipt-header { text-align: center; margin-bottom: 16px; border-bottom: 2px dashed var(--border); padding-bottom: 14px; }
+  .receipt-brand { font-family: 'Baloo 2', cursive; font-size: 22px; font-weight: 700; color: var(--saffron); }
+  .receipt-sub { font-size: 12px; color: var(--ink3); }
+  .receipt-row { display: flex; justify-content: space-between; font-size: 13px; padding: 5px 0; border-bottom: 1px solid #f0e8e0; }
+  .receipt-row .rlbl { color: var(--ink3); }
+  .receipt-row .rval { font-weight: 500; color: var(--ink); text-align: right; max-width: 200px; }
+  .receipt-total { display: flex; justify-content: space-between; font-size: 16px; font-weight: 700; padding: 10px 0 0; margin-top: 4px; color: var(--saffron); }
+  .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+  .modal-actions button { flex: 1; }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--ink); color: white; padding: 10px 20px; border-radius: 24px; font-size: 13px; font-weight: 500; z-index: 300; transition: transform 0.3s ease; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ── AREA FLOWCHART ── */
+  .flowchart-wrap { margin-top: 16px; }
+  .flow-title { font-family: 'Baloo 2', cursive; font-size: 15px; font-weight: 600; color: var(--ink); margin-bottom: 12px; }
+  .flow-grid { display: flex; flex-direction: column; gap: 0; }
+  .flow-area-row { display: flex; align-items: stretch; gap: 0; margin-bottom: 6px; }
+  .flow-area-box {
+    background: var(--saffron-light); border: 1.5px solid var(--saffron); border-radius: 10px 0 0 10px;
+    padding: 10px 14px; min-width: 130px; display: flex; flex-direction: column; justify-content: center;
+  }
+  .flow-area-name { font-weight: 700; font-size: 13px; color: var(--saffron-dark); }
+  .flow-area-meta { font-size: 11px; color: var(--ink3); margin-top: 2px; }
+  .flow-orders-strip {
+    flex: 1; border: 1.5px solid var(--border); border-left: none; border-radius: 0 10px 10px 0;
+    background: white; padding: 8px 10px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center;
+  }
+  .flow-order-chip {
+    display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500;
+    padding: 3px 8px; border-radius: 20px; border: 1px solid;
+  }
+  .chip-pending { background: #FFF3E0; color: #E65100; border-color: #FFCC80; }
+  .chip-delivered { background: var(--green-light); color: var(--green); border-color: #A5D6A7; }
+  .chip-cancelled { background: var(--red-light); color: var(--red); border-color: #FFCDD2; }
+  .flow-bar-wrap { margin-top: 4px; background: var(--border); border-radius: 3px; height: 5px; width: 100%; }
+  .flow-bar { background: var(--saffron); height: 100%; border-radius: 3px; transition: width 0.6s; }
+
+  /* SYNC BANNER */
+  .sync-banner {
+    background: #E8F5E9; border: 1px solid #A5D6A7; border-radius: 10px; padding: 10px 14px;
+    font-size: 12px; color: #2E7D32; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+  }
+  .sync-banner b { font-weight: 600; }
+
+  @media print {
+    body { background: white; }
+    .modal-overlay { position: static; background: none; padding: 0; display: block; }
+    .modal { box-shadow: none; max-height: none; overflow: visible; }
+    .modal-actions { display: none; }
+    .topbar, .nav-tabs, .page { display: none; }
+  }
+  @media (max-width: 480px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .topbar-stats { gap: 10px; }
+    .topbar-stats .stat:last-child { display: none; }
+    .order-meta { grid-template-columns: 1fr; }
+    .flow-area-box { min-width: 100px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-brand"><span>🥩</span> MeatWala</div>
+  <div class="topbar-stats">
+    <div class="stat"><span class="sval" id="hdr-orders">0</span>Orders</div>
+    <div class="stat"><span class="sval" id="hdr-delivered">0</span>Done</div>
+    <div class="stat"><span class="sval" id="hdr-revenue">₹0</span>Today</div>
+  </div>
+</div>
+
+<div class="nav-tabs">
+  <button class="nav-tab active" onclick="switchTab('add',this)">➕ New Order</button>
+  <button class="nav-tab" onclick="switchTab('orders',this)">📦 All Orders</button>
+  <button class="nav-tab" onclick="switchTab('today',this)">📅 Today</button>
+  <button class="nav-tab" onclick="switchTab('summary',this)">📊 Summary</button>
+</div>
+
+<!-- ADD ORDER PAGE -->
+<div class="page active" id="page-add">
+
+  <div class="sync-banner" id="sync-banner" style="display:none;">
+    🔗 <span id="sync-msg">Shared session active.</span>
+    <button class="btn btn-sm btn-outline" onclick="copyLink()" style="margin-left:auto;">📋 Copy Link</button>
+  </div>
+
+  <div class="form-card">
+    <div class="sec-head">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+      Customer Details
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Customer Name *</label>
+        <input type="text" id="f-name" placeholder="e.g. Ramesh Sharma" />
+      </div>
+      <div class="form-group">
+        <label>Mobile Number</label>
+        <input type="tel" id="f-phone" placeholder="9876543210" maxlength="10" />
+      </div>
+      <div class="form-group">
+        <label>Locality / Area *</label>
+        <input type="text" id="f-location" placeholder="e.g. Civil Lines, Kanpur" list="area-suggestions" />
+        <datalist id="area-suggestions"></datalist>
+      </div>
+      <div class="form-group">
+        <label>Delivery Date *</label>
+        <input type="date" id="f-date" />
+      </div>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <div class="sec-head">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      Order Details
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Meat Type</label>
+        <select id="f-type">
+          <option>Chicken (whole)</option>
+          <option>Chicken (boneless)</option>
+          <option>Mutton (with bone)</option>
+          <option>Mutton (boneless)</option>
+          <option>Fish (fresh)</option>
+          <option>Beef / Buffalo</option>
+          <option>Custom / Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Quantity (kg) *</label>
+        <input type="number" id="f-qty" placeholder="e.g. 2" min="0.1" step="0.1" />
+      </div>
+      <div class="form-group">
+        <label>Rate (₹ per kg) *</label>
+        <input type="number" id="f-rate" placeholder="e.g. 400" min="1" />
+      </div>
+      <div class="form-group">
+        <label>Total Amount (₹)</label>
+        <input type="number" id="f-amount" placeholder="Auto-calculated" readonly style="background:#f9f5f0;color:#5A4A3A;" />
+      </div>
+      <div class="form-group full">
+        <label>Notes (optional)</label>
+        <input type="text" id="f-notes" placeholder="Special instructions, payment status, etc." />
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:12px;flex-wrap:wrap;">
+    <button class="btn btn-primary" onclick="addOrder()" style="flex:1;padding:13px;">✅ Add Delivery Order</button>
+    <button class="btn btn-outline" onclick="clearForm()">Clear</button>
+  </div>
+
+  <!-- AREA FLOWCHART shown after adding order -->
+  <div id="area-flowchart-section" style="margin-top:24px;display:none;">
+    <div class="form-card">
+      <div class="sec-head">🗺️ Area-wise Delivery Map</div>
+      <div class="flowchart-wrap">
+        <div class="flow-grid" id="flow-grid"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ALL ORDERS PAGE -->
+<div class="page" id="page-orders">
+  <div class="filter-row">
+    <input type="text" id="search-input" placeholder="🔍 Search by name, area..." oninput="renderOrders()" />
+    <select id="filter-status" onchange="renderOrders()">
+      <option value="">All Status</option>
+      <option value="pending">Pending</option>
+      <option value="delivered">Delivered</option>
+      <option value="cancelled">Cancelled</option>
+    </select>
+  </div>
+  <div class="order-list" id="orders-list"></div>
+</div>
+
+<!-- TODAY PAGE -->
+<div class="page" id="page-today">
+  <div class="summary-grid" id="today-summary"></div>
+  <div class="sec-head">Today's Deliveries</div>
+  <div class="order-list" id="today-list"></div>
+</div>
+
+<!-- SUMMARY PAGE -->
+<div class="page" id="page-summary">
+  <div class="summary-grid" id="summary-cards"></div>
+  <div class="form-card">
+    <div class="sec-head">🗺️ Area-wise Flowchart</div>
+    <div class="flow-grid" id="summary-flow-grid"></div>
+  </div>
+  <div class="form-card">
+    <div class="sec-head">Revenue by Area</div>
+    <div id="area-breakdown"></div>
+  </div>
+  <div class="form-card">
+    <div class="sec-head">Recent Activity</div>
+    <div id="recent-list"></div>
+  </div>
+  <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
+    <button class="btn btn-outline" onclick="exportCSV()" style="flex:1;">⬇️ Export CSV</button>
+    <button class="btn btn-danger" onclick="clearAllOrders()">🗑️ Clear All Data</button>
+  </div>
+</div>
+
+<!-- RECEIPT MODAL -->
+<div class="modal-overlay" id="receipt-modal">
+  <div class="modal">
+    <div class="receipt-header">
+      <div class="receipt-brand">🥩 MeatWala</div>
+      <div class="receipt-sub">Delivery Receipt</div>
+    </div>
+    <div id="receipt-body"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Close</button>
+      <button class="btn btn-primary" onclick="window.print()">🖨️ Print</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── STORAGE KEY ───────────────────────────────────────
+// Use URL hash as session ID so the same link on any device shares the same key
+const BASE_KEY = 'meatwala_orders';
+
+function getStorageKey() {
+  const hash = window.location.hash.replace('#','').trim();
+  return hash ? BASE_KEY + '_' + hash : BASE_KEY;
+}
+
+const STORAGE_KEY = getStorageKey();
+
+function loadOrders() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+  catch(e) { return []; }
+}
+
+function saveOrders(orders) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
+}
+
+let orders = loadOrders();
+
+// ── SHARE LINK INIT ───────────────────────────────────
+(function initShareSession() {
+  const banner = document.getElementById('sync-banner');
+  const msg = document.getElementById('sync-msg');
+  const hash = window.location.hash.replace('#','').trim();
+
+  if (!hash) {
+    // No hash — generate one and redirect
+    const id = Math.random().toString(36).substr(2,8).toUpperCase();
+    window.location.replace(window.location.pathname + '#' + id);
+    return;
+  }
+
+  banner.style.display = 'flex';
+  msg.innerHTML = 'Session: <b>' + hash + '</b> — Share this link to access from any device.';
+})();
+
+function copyLink() {
+  const url = window.location.href;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(() => showToast('✅ Link copied! Paste in WhatsApp / Telegram'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = url;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('✅ Link copied!');
+  }
+}
+
+// ── INIT ──────────────────────────────────────────────
+document.getElementById('f-date').value = today();
+document.getElementById('f-qty').addEventListener('input', calcTotal);
+document.getElementById('f-rate').addEventListener('input', calcTotal);
+
+function today() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function calcTotal() {
+  const qty = parseFloat(document.getElementById('f-qty').value) || 0;
+  const rate = parseFloat(document.getElementById('f-rate').value) || 0;
+  document.getElementById('f-amount').value = qty && rate ? (qty * rate).toFixed(0) : '';
+}
+
+// ── TABS ──────────────────────────────────────────────
+function switchTab(tab, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + tab).classList.add('active');
+  if (el) el.classList.add('active');
+  if (tab === 'orders') renderOrders();
+  if (tab === 'today') renderToday();
+  if (tab === 'summary') renderSummary();
+  updateHeader();
+}
+
+// ── ADD ORDER ─────────────────────────────────────────
+function addOrder() {
+  const name = document.getElementById('f-name').value.trim();
+  const location = document.getElementById('f-location').value.trim();
+  const date = document.getElementById('f-date').value;
+  const qty = parseFloat(document.getElementById('f-qty').value);
+  const rate = parseFloat(document.getElementById('f-rate').value);
+
+  if (!name) return showToast('⚠️ Please enter customer name');
+  if (!location) return showToast('⚠️ Please enter locality/area');
+  if (!date) return showToast('⚠️ Please select delivery date');
+  if (!qty || qty <= 0) return showToast('⚠️ Please enter valid quantity');
+  if (!rate || rate <= 0) return showToast('⚠️ Please enter valid rate');
+
+  const order = {
+    id: 'MW' + Date.now(),
+    name,
+    phone: document.getElementById('f-phone').value.trim(),
+    location,
+    date,
+    type: document.getElementById('f-type').value,
+    qty,
+    rate,
+    amount: qty * rate,
+    notes: document.getElementById('f-notes').value.trim(),
+    status: 'pending',
+    createdAt: new Date().toISOString()
+  };
+
+  orders.unshift(order);
+  saveOrders(orders);
+  clearForm();
+  updateHeader();
+  updateAreaSuggestions();
+  renderAreaFlowchart('flow-grid');
+  document.getElementById('area-flowchart-section').style.display = 'block';
+  showToast('✅ Order added for ' + name);
+}
+
+function clearForm() {
+  ['f-name','f-phone','f-location','f-qty','f-rate','f-notes'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('f-amount').value = '';
+  document.getElementById('f-date').value = today();
+  document.getElementById('f-type').selectedIndex = 0;
+}
+
+function updateAreaSuggestions() {
+  const areas = [...new Set(orders.map(o => o.location).filter(Boolean))];
+  const dl = document.getElementById('area-suggestions');
+  dl.innerHTML = areas.map(a => `<option value="${a}">`).join('');
+}
+
+// ── AREA FLOWCHART ────────────────────────────────────
+function renderAreaFlowchart(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const areaMap = {};
+  orders.forEach(o => {
+    if (!areaMap[o.location]) areaMap[o.location] = { orders: [], revenue: 0, kg: 0 };
+    areaMap[o.location].orders.push(o);
+    areaMap[o.location].revenue += o.amount;
+    areaMap[o.location].kg += o.qty;
+  });
+
+  const sorted = Object.entries(areaMap).sort((a,b) => b[1].revenue - a[1].revenue);
+  const maxRev = sorted[0]?.[1].revenue || 1;
+
+  if (!sorted.length) {
+    container.innerHTML = '<p style="color:var(--ink3);font-size:13px;padding:8px 0;">No orders yet.</p>';
+    return;
+  }
+
+  container.innerHTML = sorted.map(([area, data]) => {
+    const chips = data.orders.slice(0, 10).map(o => {
+      const cls = o.status === 'delivered' ? 'chip-delivered' : o.status === 'cancelled' ? 'chip-cancelled' : 'chip-pending';
+      const icon = o.status === 'delivered' ? '✅' : o.status === 'cancelled' ? '❌' : '🕐';
+      return `<span class="flow-order-chip ${cls}">${icon} ${o.name.split(' ')[0]} · ${o.qty}kg</span>`;
+    }).join('');
+    const extra = data.orders.length > 10 ? `<span style="font-size:11px;color:var(--ink3);">+${data.orders.length-10} more</span>` : '';
+    const barW = Math.round(data.revenue / maxRev * 100);
+
+    return `
+    <div class="flow-area-row">
+      <div class="flow-area-box">
+        <div class="flow-area-name">📍 ${area}</div>
+        <div class="flow-area-meta">${data.orders.length} orders · ${data.kg.toFixed(1)} kg</div>
+        <div class="flow-area-meta" style="color:var(--saffron-dark);font-weight:600;">₹${data.revenue.toLocaleString()}</div>
+        <div class="flow-bar-wrap"><div class="flow-bar" style="width:${barW}%"></div></div>
+      </div>
+      <div class="flow-orders-strip">${chips}${extra}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── RENDER ORDERS ─────────────────────────────────────
+function renderOrders() {
+  const list = document.getElementById('orders-list');
+  const search = document.getElementById('search-input').value.toLowerCase();
+  const statusFilter = document.getElementById('filter-status').value;
+
+  let filtered = orders.filter(o => {
+    const matchSearch = !search || [o.name, o.location, o.phone].join(' ').toLowerCase().includes(search);
+    const matchStatus = !statusFilter || o.status === statusFilter;
+    return matchSearch && matchStatus;
+  });
+
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">📦</div><p>${orders.length ? 'No orders match your search.' : 'No orders yet. Add your first delivery!'}</p></div>`;
+    return;
+  }
+  list.innerHTML = filtered.map(o => orderCardHTML(o)).join('');
+}
+
+function renderToday() {
+  const tod = today();
+  const todayOrders = orders.filter(o => o.date === tod);
+  const total = todayOrders.reduce((s, o) => s + o.amount, 0);
+  const pending = todayOrders.filter(o => o.status === 'pending').length;
+  const done = todayOrders.filter(o => o.status === 'delivered').length;
+  const totalKg = todayOrders.reduce((s, o) => s + o.qty, 0);
+
+  document.getElementById('today-summary').innerHTML = `
+    <div class="sum-card"><span class="snum">${todayOrders.length}</span><div class="slbl">Total orders</div></div>
+    <div class="sum-card"><span class="snum">${pending}</span><div class="slbl">Pending</div></div>
+    <div class="sum-card"><span class="snum">${done}</span><div class="slbl">Delivered</div></div>
+    <div class="sum-card"><span class="snum">${totalKg.toFixed(1)} kg</span><div class="slbl">Meat today</div></div>
+    <div class="sum-card"><span class="snum">₹${total.toLocaleString()}</span><div class="slbl">Today's revenue</div></div>
+  `;
+
+  if (!todayOrders.length) {
+    document.getElementById('today-list').innerHTML = `<div class="empty"><div class="empty-icon">☀️</div><p>No deliveries scheduled for today.</p></div>`;
+    return;
+  }
+  document.getElementById('today-list').innerHTML = todayOrders.map(o => orderCardHTML(o)).join('');
+}
+
+function renderSummary() {
+  const total = orders.reduce((s, o) => s + o.amount, 0);
+  const totalKg = orders.reduce((s, o) => s + o.qty, 0);
+  const delivered = orders.filter(o => o.status === 'delivered').length;
+  const pending = orders.filter(o => o.status === 'pending').length;
+
+  document.getElementById('summary-cards').innerHTML = `
+    <div class="sum-card"><span class="snum">${orders.length}</span><div class="slbl">Total orders</div></div>
+    <div class="sum-card"><span class="snum">${delivered}</span><div class="slbl">Delivered</div></div>
+    <div class="sum-card"><span class="snum">${pending}</span><div class="slbl">Pending</div></div>
+    <div class="sum-card"><span class="snum">${totalKg.toFixed(1)} kg</span><div class="slbl">Total meat</div></div>
+    <div class="sum-card"><span class="snum">₹${total.toLocaleString()}</span><div class="slbl">Total revenue</div></div>
+  `;
+
+  renderAreaFlowchart('summary-flow-grid');
+
+  const areas = {};
+  orders.forEach(o => { areas[o.location] = (areas[o.location] || 0) + o.amount; });
+  const sorted = Object.entries(areas).sort((a, b) => b[1] - a[1]);
+  const maxVal = sorted[0]?.[1] || 1;
+
+  document.getElementById('area-breakdown').innerHTML = sorted.length
+    ? sorted.map(([area, amt]) => `
+      <div style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+          <span style="color:var(--ink2);font-weight:500;">${area}</span>
+          <span style="color:var(--saffron);font-weight:600;">₹${amt.toLocaleString()}</span>
+        </div>
+        <div style="background:var(--border);border-radius:4px;height:8px;overflow:hidden;">
+          <div style="background:var(--saffron);height:100%;border-radius:4px;width:${Math.round(amt/maxVal*100)}%;transition:width 0.5s;"></div>
+        </div>
+      </div>`).join('')
+    : '<p style="color:var(--ink3);font-size:13px;">No data yet.</p>';
+
+  document.getElementById('recent-list').innerHTML = orders.slice(0, 5).map(o => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;">
+      <div>
+        <div style="font-weight:500;color:var(--ink);">${o.name}</div>
+        <div style="color:var(--ink3);font-size:12px;">${o.location} · ${formatDate(o.date)}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-weight:600;color:var(--saffron);">₹${o.amount.toLocaleString()}</div>
+        <span class="badge badge-${o.status}">${o.status}</span>
+      </div>
+    </div>`).join('') || '<p style="color:var(--ink3);font-size:13px;">No orders yet.</p>';
+}
+
+// ── ORDER CARD HTML ───────────────────────────────────
+function orderCardHTML(o) {
+  return `
+  <div class="order-card ${o.status}" id="card-${o.id}">
+    <div class="order-top">
+      <div>
+        <div class="order-name">${o.name}</div>
+        <div class="order-id">${o.id} · Added ${timeAgo(o.createdAt)}</div>
+      </div>
+      <span class="badge badge-${o.status}">${o.status === 'pending' ? '🕐 Pending' : o.status === 'delivered' ? '✅ Delivered' : '❌ Cancelled'}</span>
+    </div>
+    <div class="order-meta">
+      <span><span class="icon">📦</span> ${o.type}</span>
+      <span><span class="icon">⚖️</span> ${o.qty} kg × ₹${o.rate}/kg</span>
+      <span><span class="icon">💰</span> ₹${o.amount.toLocaleString()}</span>
+      <span><span class="icon">📅</span> ${formatDate(o.date)}</span>
+      <span><span class="icon">🗺️</span> ${o.location}</span>
+      ${o.phone ? `<span><span class="icon">📞</span> ${o.phone}</span>` : ''}
+    </div>
+    ${o.notes ? `<div style="font-size:12px;color:var(--ink3);margin-bottom:8px;font-style:italic;">📝 ${o.notes}</div>` : ''}
+    <div class="order-actions">
+      ${o.status === 'pending' ? `<button class="btn btn-green btn-sm" onclick="updateStatus('${o.id}','delivered')">✅ Mark Delivered</button>` : ''}
+      ${o.status === 'pending' ? `<button class="btn btn-danger btn-sm" onclick="updateStatus('${o.id}','cancelled')">❌ Cancel</button>` : ''}
+      ${o.status !== 'pending' ? `<button class="btn btn-outline btn-sm" onclick="updateStatus('${o.id}','pending')">↩️ Reset</button>` : ''}
+      <button class="btn btn-outline btn-sm" onclick="showReceipt('${o.id}')">🧾 Receipt</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteOrder('${o.id}')">🗑️</button>
+    </div>
+  </div>`;
+}
+
+// ── ACTIONS ───────────────────────────────────────────
+function updateStatus(id, status) {
+  const idx = orders.findIndex(o => o.id === id);
+  if (idx === -1) return;
+  orders[idx].status = status;
+  saveOrders(orders);
+  updateHeader();
+  const activePage = document.querySelector('.page.active').id;
+  if (activePage === 'page-orders') renderOrders();
+  if (activePage === 'page-today') renderToday();
+  if (activePage === 'page-summary') renderSummary();
+  if (document.getElementById('area-flowchart-section').style.display !== 'none') renderAreaFlowchart('flow-grid');
+  showToast(status === 'delivered' ? '✅ Marked as delivered!' : status === 'cancelled' ? '❌ Order cancelled' : '↩️ Reset to pending');
+}
+
+function deleteOrder(id) {
+  if (!confirm('Delete this order permanently?')) return;
+  orders = orders.filter(o => o.id !== id);
+  saveOrders(orders);
+  updateHeader();
+  const activePage = document.querySelector('.page.active').id;
+  if (activePage === 'page-orders') renderOrders();
+  if (activePage === 'page-today') renderToday();
+  showToast('🗑️ Order deleted');
+}
+
+function clearAllOrders() {
+  if (!confirm('Delete ALL orders? This cannot be undone.')) return;
+  orders = [];
+  saveOrders(orders);
+  updateHeader();
+  renderSummary();
+  document.getElementById('area-flowchart-section').style.display = 'none';
+  showToast('🗑️ All data cleared');
+}
+
+// ── RECEIPT ───────────────────────────────────────────
+function showReceipt(id) {
+  const o = orders.find(x => x.id === id);
+  if (!o) return;
+  document.getElementById('receipt-body').innerHTML = `
+    <div class="receipt-row"><span class="rlbl">Order ID</span><span class="rval">${o.id}</span></div>
+    <div class="receipt-row"><span class="rlbl">Customer</span><span class="rval">${o.name}</span></div>
+    ${o.phone ? `<div class="receipt-row"><span class="rlbl">Mobile</span><span class="rval">${o.phone}</span></div>` : ''}
+    <div class="receipt-row"><span class="rlbl">Area</span><span class="rval">${o.location}</span></div>
+    <div class="receipt-row"><span class="rlbl">Delivery Date</span><span class="rval">${formatDate(o.date)}</span></div>
+    <div class="receipt-row"><span class="rlbl">Meat Type</span><span class="rval">${o.type}</span></div>
+    <div class="receipt-row"><span class="rlbl">Quantity</span><span class="rval">${o.qty} kg</span></div>
+    <div class="receipt-row"><span class="rlbl">Rate</span><span class="rval">₹${o.rate} per kg</span></div>
+    ${o.notes ? `<div class="receipt-row"><span class="rlbl">Notes</span><span class="rval">${o.notes}</span></div>` : ''}
+    <div class="receipt-row"><span class="rlbl">Status</span><span class="rval">${o.status.toUpperCase()}</span></div>
+    <div class="receipt-total"><span>Total Amount</span><span>₹${o.amount.toLocaleString()}</span></div>
+    <div style="text-align:center;margin-top:14px;font-size:11px;color:var(--ink3);">Thank you for your order! 🙏</div>
+  `;
+  document.getElementById('receipt-modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('receipt-modal').classList.remove('open');
+}
+
+// ── EXPORT CSV ────────────────────────────────────────
+function exportCSV() {
+  if (!orders.length) return showToast('No orders to export');
+  const headers = ['Order ID','Name','Phone','Area','Date','Type','Qty (kg)','Rate','Amount','Status','Notes'];
+  const rows = orders.map(o => [o.id, o.name, o.phone, o.location, o.date, o.type, o.qty, o.rate, o.amount, o.status, o.notes]);
+  const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'meat_orders_' + today() + '.csv';
+  a.click();
+  showToast('✅ CSV exported!');
+}
+
+// ── HELPERS ───────────────────────────────────────────
+function updateHeader() {
+  const tod = today();
+  const todayRevenue = orders.filter(o => o.date === tod).reduce((s, o) => s + o.amount, 0);
+  document.getElementById('hdr-orders').textContent = orders.length;
+  document.getElementById('hdr-delivered').textContent = orders.filter(o => o.status === 'delivered').length;
+  document.getElementById('hdr-revenue').textContent = '₹' + (todayRevenue >= 1000 ? (todayRevenue/1000).toFixed(1) + 'K' : todayRevenue);
+}
+
+function formatDate(d) {
+  if (!d) return '';
+  const [y, m, day] = d.split('-');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${parseInt(day)} ${months[parseInt(m)-1]} ${y}`;
+}
+
+function timeAgo(iso) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return mins + 'm ago';
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + 'h ago';
+  return Math.floor(hrs / 24) + 'd ago';
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+document.getElementById('receipt-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// init
+updateHeader();
+updateAreaSuggestions();
+if (orders.length > 0) {
+  document.getElementById('area-flowchart-section').style.display = 'block';
+  renderAreaFlowchart('flow-grid');
+}
+</script>
+</body>
+</html>
